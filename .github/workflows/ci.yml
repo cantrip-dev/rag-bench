@@ -16,18 +16,14 @@ jobs:
           POSTGRES_PASSWORD: postgres
         ports: ["5432:5432"]
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
-      qdrant:
-        image: qdrant/qdrant
-        ports: ["6333:6333"]
     env:
       RAG_BENCH_TEST_PG_URL: postgresql://postgres:postgres@localhost:5432/postgres
-      RAG_BENCH_TEST_QDRANT_URL: qdrant://localhost:6333
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -e ".[dev,postgres]"
+      - run: pip install -e ".[dev,faiss,postgres]"
       - run: pytest -q -rs
       - name: Runs without installing, with no extras
         run: python -m venv /tmp/bare && /tmp/bare/bin/python -m rag_bench datasets

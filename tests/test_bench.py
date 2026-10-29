@@ -45,8 +45,8 @@ def test_memory_store_finds_nearest():
 
 def test_redact_hides_passwords_only():
     assert redact("postgresql://bob:s3cret@db:5432/app") == "postgresql://bob:***@db:5432/app"
-    assert redact("qdrants://:key@cloud.example:6333") == "qdrants://***@cloud.example:6333"
-    assert redact("qdrant://localhost:6333") == "qdrant://localhost:6333"
+    assert redact("postgresql://:pw@db/app") == "postgresql://***@db/app"
+    assert redact("faiss://") == "faiss://"
     assert redact("postgresql://bob:pw@/db?host=/run/pg") == "postgresql://bob:***@/db?host=/run/pg"
 
 
@@ -101,20 +101,26 @@ def test_cli_writes_results(api, tmp_path, capsys, monkeypatch):
     assert "faithfulness 1.000" in capsys.readouterr().out
 
 
-# Real databases: set these to run against them (CI starts both as services).
-@pytest.mark.parametrize("env", ["RAG_BENCH_TEST_PG_URL", "RAG_BENCH_TEST_QDRANT_URL"])
-def test_real_database(api, tmp_path, env):
-    if not os.environ.get(env):
-        pytest.skip(f"{env} not set")
-    url = os.environ[env]
+@pytest.mark.parametrize("url, index", [("faiss://", "hnsw"), ("faiss://flat", "exact (flat)")])
+def test_faiss(api, tmp_path, url, index):
+    pytest.importorskip("faiss")
+    r = run(config(api, db=url), cache=tmp_path)
+    assert r["run"]["db_index"] == index
+    assert r["db"]["ann_recall@3"] >= 0.9 and r["retrieval"]["hit@3"] >= 0.75
+
+
+def test_unknown_faiss_index():
+    pytest.importorskip("faiss")
+    with pytest.raises(ValueError, match="ivf"):
+        open_store("faiss://ivf", "t")
+
+
+# A real Postgres with pgvector: set this to run against it (CI starts one as a service).
+def test_pgvector(api, tmp_path):
+    url = os.environ.get("RAG_BENCH_TEST_PG_URL") or pytest.skip("RAG_BENCH_TEST_PG_URL not set")
     r = run(config(api, db=url), cache=tmp_path)
     assert r["db"]["ann_recall@3"] >= 0.9 and r["retrieval"]["hit@3"] >= 0.75
     assert r["run"]["db_index"] == "hnsw"
-    store = open_store(url, "rag_bench_leftover_check")  # the run's table/collection is gone
-    if env == "RAG_BENCH_TEST_PG_URL":
-        rows = store._conn().execute("SELECT count(*) FROM pg_tables WHERE tablename LIKE 'rag_bench_%'").fetchone()
-        assert rows[0] == 0
-    else:
-        from rag_bench.http import request
-        names = [c["name"] for c in request(store.base.rsplit("/", 1)[0], method="GET")["result"]["collections"]]
-        assert not [n for n in names if n.startswith("rag_bench_")]
+    store = open_store(url, "rag_bench_leftover_check")  # the run's table is gone
+    rows = store._conn().execute("SELECT count(*) FROM pg_tables WHERE tablename LIKE 'rag_bench_%'").fetchone()
+    assert rows[0] == 0

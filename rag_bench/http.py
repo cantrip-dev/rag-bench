@@ -1,4 +1,4 @@
-"""One JSON-over-HTTP helper, shared by the embedder, the LLM and the Qdrant store."""
+"""One JSON-over-HTTP helper, shared by the embedder and the LLM."""
 
 from __future__ import annotations
 

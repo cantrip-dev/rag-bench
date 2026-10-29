@@ -1,9 +1,10 @@
-"""Vector stores, opened from a URL. Each run gets its own throwaway table or collection, dropped at the end,
+"""Vector stores, opened from a URL. A database server gets its own throwaway table each run, dropped at the end,
 so rag-bench never reads or changes anything else in your database.
 
-    memory://                              exact search in this process (also the baseline for ANN recall)
+    faiss://                               FAISS HNSW index in this process; faiss://flat for exact search
+                                           (pip install "rag-bench[faiss]")
     postgresql://user:pass@host:5432/db    Postgres with pgvector, e.g. Neon   (pip install "rag-bench[postgres]")
-    qdrant://host:6333                     Qdrant over HTTP; qdrants:// for HTTPS, an API key as the password
+    memory://                              exact search in plain Python, no installs (also the baseline for ANN recall)
 """
 
 from __future__ import annotations
@@ -13,8 +14,6 @@ import math
 import threading
 from urllib.parse import urlsplit
 
-from .http import request
-
 
 def open_store(url: str, name: str):
     scheme = urlsplit(url).scheme
@@ -22,9 +21,9 @@ def open_store(url: str, name: str):
         return MemoryStore()
     if scheme in ("postgres", "postgresql"):
         return PgVectorStore(url, name)
-    if scheme in ("qdrant", "qdrants"):
-        return QdrantStore(url, name)
-    raise ValueError(f"Unknown database URL scheme '{scheme}://': use memory://, postgresql:// or qdrant://")
+    if scheme == "faiss":
+        return FaissStore(urlsplit(url).netloc or "hnsw")
+    raise ValueError(f"Unknown database URL scheme '{scheme}://': use faiss://, postgresql:// or memory://")
 
 
 def redact(url: str) -> str:
@@ -60,6 +59,40 @@ class MemoryStore:
 
     def drop(self) -> None:
         self.ids, self.vectors = [], []
+
+
+class FaissStore:
+    def __init__(self, kind: str):
+        try:
+            import faiss
+            import numpy
+        except ImportError:
+            raise SystemExit('FAISS needs its library: pip install "rag-bench[faiss]"') from None
+        if kind not in ("hnsw", "flat"):
+            raise ValueError(f"Unknown FAISS index '{kind}': use faiss:// (HNSW) or faiss://flat (exact)")
+        self.faiss, self.numpy, self.kind = faiss, numpy, kind
+        self.index = "hnsw" if kind == "hnsw" else "exact (flat)"
+
+    def _unit(self, vectors: list[list[float]]):
+        a = self.numpy.asarray(vectors, dtype="float32")
+        self.faiss.normalize_L2(a)  # unit vectors, so inner product = cosine similarity
+        return a
+
+    def create(self, dim: int) -> None:
+        ip = self.faiss.METRIC_INNER_PRODUCT
+        self.ix = self.faiss.IndexHNSWFlat(dim, 32, ip) if self.kind == "hnsw" else self.faiss.IndexFlatIP(dim)
+        self.ids: list[str] = []
+
+    def add(self, ids: list[str], vectors: list[list[float]]) -> None:
+        self.ix.add(self._unit(vectors))
+        self.ids += ids
+
+    def search(self, vector: list[float], k: int) -> list[str]:
+        _, found = self.ix.search(self._unit([vector]), k)
+        return [self.ids[i] for i in found[0] if i >= 0]
+
+    def drop(self) -> None:
+        self.ix, self.ids = None, []
 
 
 class PgVectorStore:
@@ -104,34 +137,3 @@ class PgVectorStore:
         self._conn().execute(f"DROP TABLE IF EXISTS {self.table}")
         for c in self.conns:
             c.close()
-
-
-class QdrantStore:
-    index = "hnsw"
-
-    def __init__(self, url: str, name: str):
-        parts = urlsplit(url)
-        scheme = "https" if parts.scheme == "qdrants" else "http"
-        self.base = f"{scheme}://{parts.hostname}:{parts.port or 6333}/collections/{name}"
-        self.headers = {"api-key": parts.password} if parts.password else {}
-
-    def _call(self, path: str, body: dict | None = None, method: str = "POST") -> dict:
-        return request(self.base + path, body, self.headers, method=method)
-
-    def create(self, dim: int) -> None:
-        self._call("", {"vectors": {"size": dim, "distance": "Cosine"}}, "PUT")
-        self.ids: list[str] = []
-
-    def add(self, ids: list[str], vectors: list[list[float]]) -> None:
-        for start in range(0, len(ids), 256):
-            points = [{"id": len(self.ids) + j, "vector": v}
-                      for j, v in enumerate(vectors[start:start + 256])]
-            self._call("/points?wait=true", {"points": points}, "PUT")
-            self.ids += ids[start:start + 256]
-
-    def search(self, vector: list[float], k: int) -> list[str]:
-        hits = self._call("/points/search", {"vector": vector, "limit": k})["result"]
-        return [self.ids[h["id"]] for h in hits]
-
-    def drop(self) -> None:
-        self._call("", method="DELETE")

@@ -1,5 +1,4 @@
-# Qdrant Cloud, one provider's LLM answering and another's grading.
-# export RAG_BENCH_DB_URL=qdrants://:YOUR_API_KEY@your-cluster.cloud.qdrant.io:6333
+# A bigger dataset, with one provider's LLM answering and another's grading.
 # export OPENAI_API_KEY=...  ANTHROPIC_API_KEY=...
 
 dataset = "fiqa"
@@ -7,7 +6,7 @@ questions = 200
 k = 10
 
 [db]
-url_env = "RAG_BENCH_DB_URL"
+url = "faiss://"
 
 [embedder]
 model = "text-embedding-3-large"

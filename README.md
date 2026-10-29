@@ -13,9 +13,9 @@ LLM, two embedding models.
 ## Quick start
 
 ```sh
-pip install -e .                       # no dependencies; add [postgres] for pgvector
+pip install -e ".[faiss]"              # [postgres] for pgvector; the core needs nothing
 export OPENAI_API_KEY=...              # or point everything at a local Ollama: see examples/
-rag-bench run examples/tiny-memory.toml
+rag-bench run examples/tiny-faiss.toml
 ```
 
 ```
@@ -53,14 +53,14 @@ testing a weaker model doesn't also make the grading softer.
 
 ## Pick the pieces
 
-**Database**, by URL. Each run creates its own `rag_bench_<id>` table or collection and drops it at the
+**Database**, by URL. On Postgres, each run creates its own `rag_bench_<id>` table and drops it at the
 end; nothing else in your database is read or changed.
 
 | URL | |
 |---|---|
-| `memory://` | Exact search in Python. No setup; slow above ~50K chunks. |
+| `faiss://` | FAISS in this process, HNSW index. `faiss://flat` for exact search. The base example (`pip install -e ".[faiss]"`). |
 | `postgresql://user:pass@host:5432/db` | Postgres with pgvector, including Neon (`pip install -e ".[postgres]"`). HNSW index up to 2,000 dimensions. |
-| `qdrant://host:6333` | Qdrant. `qdrants://:API_KEY@host:6333` for HTTPS with an API key. |
+| `memory://` | Exact search in plain Python. Nothing to install; slow above ~50K chunks. |
 
 **Neon** works as Postgres: in the Neon console press Connect, copy the connection string (it ends in
 `?sslmode=require`), and use it as the URL. pgvector comes with Neon; the run turns it on if it isn't yet.
@@ -136,12 +136,12 @@ More in `examples/`.
 pip install -e ".[dev,postgres]" && pytest -q
 ```
 
-Tests use a local fake API, so they're free and offline. To run them against real databases too, set
-`RAG_BENCH_TEST_PG_URL` and `RAG_BENCH_TEST_QDRANT_URL` (CI does, with both as services).
+Tests use a local fake API, so they're free and offline. The FAISS tests run when FAISS is installed;
+to run against a real Postgres too, set `RAG_BENCH_TEST_PG_URL` (CI does, with pgvector as a service).
 
 ## Contributing
 
-Sign off your commits (`git commit -s`). Keep the core free of dependencies: a new database's driver
+Sign off your commits (`git commit -s`). Keep the core free of dependencies: a new database's library
 goes in an optional extra.
 
 ## License

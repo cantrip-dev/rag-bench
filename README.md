@@ -59,8 +59,14 @@ end; nothing else in your database is read or changed.
 | URL | |
 |---|---|
 | `memory://` | Exact search in Python. No setup; slow above ~50K chunks. |
-| `postgresql://user:pass@host:5432/db` | Postgres with pgvector (`pip install -e ".[postgres]"`). HNSW index up to 2,000 dimensions. |
+| `postgresql://user:pass@host:5432/db` | Postgres with pgvector, including Neon (`pip install -e ".[postgres]"`). HNSW index up to 2,000 dimensions. |
 | `qdrant://host:6333` | Qdrant. `qdrants://:API_KEY@host:6333` for HTTPS with an API key. |
+
+**Neon** works as Postgres: in the Neon console press Connect, copy the connection string (it ends in
+`?sslmode=require`), and use it as the URL. pgvector comes with Neon; the run turns it on if it isn't yet.
+The pooled (`-pooler`) and direct strings both work. Two things to know: search times include the round
+trip from your machine to Neon's region, so run near it for numbers you'll compare; and the first run on
+a suspended database waits for it to wake. See `examples/neon.toml`.
 
 Put a URL with a password in an environment variable and name it with `url_env`, so it stays out of
 the config file. Passwords are never printed or saved in results.

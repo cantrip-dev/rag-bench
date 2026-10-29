@@ -2,7 +2,7 @@
 so rag-bench never reads or changes anything else in your database.
 
     memory://                              exact search in this process (also the baseline for ANN recall)
-    postgresql://user:pass@host:5432/db    Postgres with pgvector   (pip install "rag-bench[postgres]")
+    postgresql://user:pass@host:5432/db    Postgres with pgvector, e.g. Neon   (pip install "rag-bench[postgres]")
     qdrant://host:6333                     Qdrant over HTTP; qdrants:// for HTTPS, an API key as the password
 """
 
@@ -75,7 +75,8 @@ class PgVectorStore:
 
     def _conn(self):
         if not hasattr(self.local, "conn"):  # one connection per thread, for the concurrency test
-            self.local.conn = self.psycopg.connect(self.url, autocommit=True)
+            # No server-side prepared statements, so pooled endpoints (Neon's -pooler, PgBouncer) work too.
+            self.local.conn = self.psycopg.connect(self.url, autocommit=True, prepare_threshold=None)
             self.conns.append(self.local.conn)
         return self.local.conn
 

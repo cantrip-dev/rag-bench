@@ -1,0 +1,20 @@
+# Neon (serverless Postgres with pgvector).
+# In the Neon console, press Connect and copy the connection string, then:
+# export RAG_BENCH_DB_URL='postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require'
+# export OPENAI_API_KEY=...
+# pip install -e ".[postgres]"  &&  rag-bench run examples/neon.toml
+
+dataset = "scifact"
+questions = 100
+k = 10
+
+[db]
+url_env = "RAG_BENCH_DB_URL"
+
+[embedder]
+model = "text-embedding-3-small"
+key_env = "OPENAI_API_KEY"
+
+[llm]
+model = "gpt-4o-mini"
+key_env = "OPENAI_API_KEY"

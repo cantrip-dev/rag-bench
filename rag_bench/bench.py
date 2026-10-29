@@ -92,10 +92,11 @@ def run(cfg: dict, cache: Path = Path(".rag-bench")) -> dict:
         searches = query_vectors * max(1, 200 // len(query_vectors))  # at least ~200 searches per level
         for workers in cfg.get("concurrency", [1, 8]):
             print(f"Measuring throughput with {workers} parallel searches...")
-            t = time.perf_counter()
             with ThreadPoolExecutor(workers) as pool:
+                list(pool.map(lambda v: store.search(v, k), searches[:workers]))  # untimed: opens each connection
+                t = time.perf_counter()
                 list(pool.map(lambda v: store.search(v, k), searches))
-            throughput[str(workers)] = round(len(searches) / (time.perf_counter() - t), 1)
+                throughput[str(workers)] = round(len(searches) / (time.perf_counter() - t), 1)
     finally:
         store.drop()
 

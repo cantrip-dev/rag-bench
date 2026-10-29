@@ -1,0 +1,21 @@
+# Everything local: Postgres with pgvector, and models served by Ollama (no API keys).
+# ollama pull nomic-embed-text && ollama pull llama3.2
+# export RAG_BENCH_DB_URL=postgresql://user:password@localhost:5432/mydb
+
+dataset = "scifact"
+questions = 100        # a fixed sample of the 300; 0 = all
+k = 10
+chunk_size = 1000      # characters
+chunk_overlap = 100
+concurrency = [1, 8]   # parallel searches for the queries/s test
+
+[db]
+url_env = "RAG_BENCH_DB_URL"   # read from the environment, so the password stays out of this file
+
+[embedder]
+model = "nomic-embed-text"
+base_url = "http://localhost:11434/v1"
+
+[llm]
+model = "llama3.2"
+base_url = "http://localhost:11434/v1"

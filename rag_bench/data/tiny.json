@@ -1,0 +1,39 @@
+{
+  "about": "A made-up company handbook, written for rag-bench. Small enough to run in seconds; every question has a reference answer.",
+  "docs": {
+    "leave": "Harbor Labs staff get 25 days of paid leave a year, plus public holidays. Unused days carry over up to a limit of 5 days into the next year.",
+    "remote": "Harbor Labs is remote-first. Staff may work from any country where the company has a payroll entity: currently the United States, Canada, Germany and Portugal.",
+    "equipment": "New hires choose a laptop on their first day. The company also pays up to 500 US dollars for a desk, chair or monitor, once every three years.",
+    "oncall": "Engineers join the on-call rotation after their third month. A rotation lasts one week, and each on-call week earns one extra day of paid leave.",
+    "expenses": "Expenses under 100 US dollars need no approval. Larger expenses need a manager's approval before purchase. Claims must be filed within 60 days.",
+    "offsite": "The whole company meets in person twice a year, in spring and autumn. Travel and hotels for the offsite are booked and paid for by the company.",
+    "learning": "Each employee has a learning budget of 1,000 US dollars a year for courses, books and conferences. The budget does not carry over.",
+    "reviews": "Performance reviews happen every six months, in January and July. Salary changes take effect on the first day of the month after the review.",
+    "security": "All laptops must use full-disk encryption and a password manager. Lost or stolen devices must be reported to the security team within 24 hours.",
+    "parental": "Parents get 16 weeks of fully paid parental leave, which can be taken in up to three blocks within the first year after a birth or adoption."
+  },
+  "questions": {
+    "q1": "How many days of paid leave do staff get each year?",
+    "q2": "Which countries can I work from?",
+    "q3": "How much will the company pay towards a monitor or chair?",
+    "q4": "When can an engineer start doing on-call, and what do they get for it?",
+    "q5": "Do I need approval to buy something for 250 dollars?",
+    "q6": "How long is parental leave?",
+    "q7": "When are performance reviews held?",
+    "q8": "What should I do if my laptop is stolen?"
+  },
+  "relevant": {
+    "q1": ["leave"], "q2": ["remote"], "q3": ["equipment"], "q4": ["oncall"],
+    "q5": ["expenses"], "q6": ["parental"], "q7": ["reviews"], "q8": ["security"]
+  },
+  "answers": {
+    "q1": "25 days a year, plus public holidays.",
+    "q2": "The United States, Canada, Germany and Portugal.",
+    "q3": "Up to 500 US dollars, once every three years.",
+    "q4": "After their third month; each on-call week earns one extra day of paid leave.",
+    "q5": "Yes, anything over 100 dollars needs a manager's approval before purchase.",
+    "q6": "16 weeks, fully paid.",
+    "q7": "Every six months, in January and July.",
+    "q8": "Report it to the security team within 24 hours."
+  }
+}

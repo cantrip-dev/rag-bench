@@ -1,0 +1,24 @@
+# Qdrant Cloud, one provider's LLM answering and another's grading.
+# export RAG_BENCH_DB_URL=qdrants://:YOUR_API_KEY@your-cluster.cloud.qdrant.io:6333
+# export OPENAI_API_KEY=...  ANTHROPIC_API_KEY=...
+
+dataset = "fiqa"
+questions = 200
+k = 10
+
+[db]
+url_env = "RAG_BENCH_DB_URL"
+
+[embedder]
+model = "text-embedding-3-large"
+key_env = "OPENAI_API_KEY"
+
+[llm]
+model = "gpt-4o-mini"
+key_env = "OPENAI_API_KEY"
+
+[judge]                    # optional: defaults to the [llm] above
+provider = "anthropic"
+base_url = "https://api.anthropic.com"
+model = "claude-haiku-4-5"
+key_env = "ANTHROPIC_API_KEY"
